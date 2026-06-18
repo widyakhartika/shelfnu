@@ -1,7 +1,8 @@
 // Approver levels for asset requests — order matters (level 1 first)
+// IDs sourced from live iAssets approval settings (IT category, levels 1-4)
 export const APPROVER_LEVELS: string[] = [
-  'cmpqrx69g04dnoq0754tmqnmx',
-  'cmpxlivtn0051pk07qfmif9ji',
-  'cmpqrx5lv02j7oq078z7cfmcc',
-  'cmpqrx7pc08a7oq07wlj19cza',
+  'cmp3lbeo30onib0fcd3ejrbgv',  // Level 1
+  'cmpxlivtm004xpk07pgxy7hkj',  // Level 2
+  'cmp3khtuv05s4b0fc3jlqubak',  // Level 3
+  'cmpqrx7pd08anoq0738c9ch4s',  // Level 4
 ];
