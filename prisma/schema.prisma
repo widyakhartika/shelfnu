@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RequestStatus {
+  PENDING
+  SUBMITTED
+  FAILED
+  CANCELLED
+}
+
+model AssetRequest {
+  id             String        @id @default(cuid())
+  telegramUserId String
+  telegramUsername String?
+  assetName      String
+  categoryId     String
+  quantity       Int
+  urgency        Urgency
+  justification  String
+  status         RequestStatus @default(PENDING)
+  errorMessage   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([telegramUserId])
+  @@index([status])
+  @@map("asset_requests")
+}
+
+model Settings {
+  id             String   @id @default(cuid())
+  organizationId String
+  cookieSession  String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("settings")
+}
