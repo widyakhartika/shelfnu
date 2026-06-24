@@ -16,10 +16,27 @@ export class TabunganService {
     return prisma.member.findUnique({ where: { telegramUserId } });
   }
 
+  async getMemberCount() {
+    return prisma.member.count();
+  }
+
   async setSupervisor(telegramUserId: string) {
     return prisma.member.update({
       where: { telegramUserId },
       data: { role: MemberRole.SUPERVISOR },
+    });
+  }
+
+  async removeSupervisor(telegramUserId: string) {
+    return prisma.member.update({
+      where: { telegramUserId },
+      data: { role: MemberRole.MEMBER },
+    });
+  }
+
+  async getSupervisors() {
+    return prisma.member.findMany({
+      where: { role: MemberRole.SUPERVISOR },
     });
   }
 
@@ -34,7 +51,6 @@ export class TabunganService {
   }
 
   async recordEarned(memberId: string, holidayDate: Date, holidayName: string, notes?: string) {
-    // EARNED entries are auto-approved (supervisor records after the fact)
     return prisma.tabunganLibur.create({
       data: {
         memberId,
@@ -48,17 +64,36 @@ export class TabunganService {
     });
   }
 
-  async requestUsed(memberId: string, holidayDate: Date, holidayName: string, notes?: string) {
+  async batchRecordEarned(memberIds: string[], holidayDate: Date, holidayName: string) {
+    const entries = memberIds.map((memberId) => ({
+      memberId,
+      type: TabunganType.EARNED as const,
+      holidayDate,
+      holidayName,
+      status: TabunganStatus.APPROVED as const,
+      approvedAt: new Date(),
+      updatedAt: new Date(),
+    }));
+    return prisma.tabunganLibur.createMany({ data: entries });
+  }
+
+  async requestUsed(memberId: string, takeDate: Date, reason: string, notes?: string) {
     return prisma.tabunganLibur.create({
       data: {
         memberId,
         type: TabunganType.USED,
-        holidayDate,
-        holidayName,
+        holidayDate: takeDate,
+        holidayName: reason,
         notes,
         status: TabunganStatus.PENDING,
       },
     });
+  }
+
+  async cancelRequest(entryId: string, memberId: string) {
+    const entry = await prisma.tabunganLibur.findUnique({ where: { id: entryId } });
+    if (!entry || entry.memberId !== memberId || entry.status !== 'PENDING') return null;
+    return prisma.tabunganLibur.delete({ where: { id: entryId } });
   }
 
   async getPendingRequests() {
@@ -94,6 +129,13 @@ export class TabunganService {
     });
   }
 
+  async getMyPending(memberId: string) {
+    return prisma.tabunganLibur.findMany({
+      where: { memberId, type: TabunganType.USED, status: TabunganStatus.PENDING },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getRekapAll() {
     const members = await prisma.member.findMany({
       include: {
@@ -107,12 +149,26 @@ export class TabunganService {
     });
   }
 
+  async getAllMembers() {
+    return prisma.member.findMany({ orderBy: { fullName: 'asc' } });
+  }
+
   async getPublicHolidays(year: number) {
     const start = new Date(`${year}-01-01`);
-    const end = new Date(`${year}-12-31`);
+    const end = new Date(`${year + 1}-01-01`);
     return prisma.publicHoliday.findMany({
-      where: { date: { gte: start, lte: end } },
+      where: { date: { gte: start, lt: end } },
       orderBy: { date: 'asc' },
+    });
+  }
+
+  async getHolidayByDate(date: Date) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    return prisma.publicHoliday.findFirst({
+      where: { date: { gte: start, lte: end } },
     });
   }
 
@@ -121,6 +177,20 @@ export class TabunganService {
       where: { date },
       update: { name, type },
       create: { date, name, type },
+    });
+  }
+
+  async deletePublicHoliday(id: string) {
+    return prisma.publicHoliday.delete({ where: { id } });
+  }
+
+  async getUpcomingHolidays(limit = 10) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return prisma.publicHoliday.findMany({
+      where: { date: { gte: now } },
+      orderBy: { date: 'asc' },
+      take: limit,
     });
   }
 
