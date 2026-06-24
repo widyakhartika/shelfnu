@@ -76,6 +76,10 @@ model Member {
 
   tabunganEntries  TabunganLibur[] @relation("MemberTabungan")
   approvals        TabunganLibur[] @relation("SupervisorApproval")
+  leaveRequests    LeaveRequest[]  @relation("MemberLeave")
+  leaveApprovals   LeaveRequest[]  @relation("SupervisorLeave")
+  shiftSchedules   ShiftSchedule[]
+  leaveQuotas      LeaveQuota[]
 
   @@map("members")
 }
@@ -110,4 +114,75 @@ model PublicHoliday {
   createdAt DateTime @default(now())
 
   @@map("public_holidays")
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  PERMISSION
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ShiftType {
+  PAGI
+  SIANG
+  MALAM
+  OFF
+}
+
+model LeaveQuota {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+  year     Int
+  total    Int    @default(12)
+
+  @@unique([memberId, year])
+  @@map("leave_quotas")
+}
+
+model LeaveRequest {
+  id              String      @id @default(cuid())
+  memberId        String
+  member          Member      @relation("MemberLeave", fields: [memberId], references: [id])
+  type            LeaveType
+  startDate       DateTime
+  endDate         DateTime
+  days            Int
+  reason          String
+  status          LeaveStatus @default(PENDING)
+  approvedById    String?
+  approvedBy      Member?     @relation("SupervisorLeave", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+  @@index([startDate])
+  @@map("leave_requests")
+}
+
+model ShiftSchedule {
+  id        String    @id @default(cuid())
+  memberId  String
+  member    Member    @relation(fields: [memberId], references: [id])
+  date      DateTime
+  shift     ShiftType
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([memberId, date])
+  @@index([memberId])
+  @@index([date])
+  @@map("shift_schedules")
 }
