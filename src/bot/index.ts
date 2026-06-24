@@ -5,6 +5,7 @@ import { logger } from '../logger';
 import { createSessionMiddleware } from './middleware/session';
 import { registerHelpHandlers } from './handlers/help.handler';
 import { registerAssetHandlers } from './handlers/asset.handler';
+import { registerTabunganHandler } from './handlers/tabungan.handler';
 import { AssetRequestService } from '../services/asset-request.service';
 import type { BotContext } from '../types';
 
@@ -18,6 +19,7 @@ export function createBot(): Bot<BotContext> {
 
   registerHelpHandlers(bot);
   registerAssetHandlers(bot);
+  registerTabunganHandler(bot);
 
   bot.command('history', async (ctx) => {
     const userId = String(ctx.from?.id ?? '');

@@ -48,3 +48,66 @@ model Settings {
 
   @@map("settings")
 }
+
+enum TabunganType {
+  EARNED
+  USED
+}
+
+enum TabunganStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MemberRole {
+  MEMBER
+  SUPERVISOR
+}
+
+model Member {
+  id               String   @id @default(cuid())
+  telegramUserId   String   @unique
+  telegramUsername String?
+  fullName         String
+  role             MemberRole @default(MEMBER)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tabunganEntries  TabunganLibur[] @relation("MemberTabungan")
+  approvals        TabunganLibur[] @relation("SupervisorApproval")
+
+  @@map("members")
+}
+
+model TabunganLibur {
+  id               String         @id @default(cuid())
+  memberId         String
+  member           Member         @relation("MemberTabungan", fields: [memberId], references: [id])
+  type             TabunganType
+  holidayDate      DateTime
+  holidayName      String
+  notes            String?
+  status           TabunganStatus @default(PENDING)
+  approvedById     String?
+  approvedBy       Member?        @relation("SupervisorApproval", fields: [approvedById], references: [id])
+  approvedAt       DateTime?
+  rejectionReason  String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+  @@index([holidayDate])
+  @@map("tabungan_libur")
+}
+
+model PublicHoliday {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  name      String
+  type      String
+  createdAt DateTime @default(now())
+
+  @@map("public_holidays")
+}
